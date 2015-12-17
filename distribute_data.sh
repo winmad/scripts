@@ -1,4 +1,4 @@
-#~/bin/bash
+#!/bin/bash
 
 for i in $(seq -f "%03g" 1 20)
 do
