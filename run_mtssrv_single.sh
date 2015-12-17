@@ -3,5 +3,5 @@
 cd /home/ubuntu/mitsuba
 . setpath.sh
 
-cd /mnt/gabardine
+cd $1
 mtssrv
