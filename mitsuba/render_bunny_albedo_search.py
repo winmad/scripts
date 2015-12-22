@@ -93,21 +93,21 @@ for i in range(len(scales)):
     r = (r_l + r_r) * 0.5
     g = (g_l + g_r) * 0.5
     b = (b_l + b_r) * 0.5
-
-    args = args_sample_count + args_scale_density + args_scale_phase
-    args_albedo_scale = " -Dr=" + str(r) + " -Dg=" + str(g) + " -Db=" + str(b)
-    args += args_albedo_scale
     
     tot_avg_err = np.zeros((3))
 
     for view in range(6):
-      ref_filename = "results/ref/bunny_spp_512_scale_1x_view_" + str(view) + ".pfm"
+      ref_filename = "results/ref/bunny_spp_1024_scale_1x_view_" + str(view) + ".pfm"
       img0 = load_pfm(open(ref_filename, "rb"))
+
+      args = args_sample_count + args_scale_density + args_scale_phase
+      args_albedo_scale = " -Dr=" + str(r) + " -Dg=" + str(g) + " -Db=" + str(b)
+      args += args_albedo_scale
       args += " -o "
       filename = "results/bunny"
       filename += "_spp_" + str(sample_count) + "_scale_" + str(scale_density) + "x_view_" + str(view) + ".pfm"
       args += filename
-      args += " bunny_view_" + str(view) + ".xml"
+      args += " bunny_view_" + str(view) + "_env.xml"
       print cmd + args
       os.system(cmd + args)
 		
