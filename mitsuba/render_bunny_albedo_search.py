@@ -103,7 +103,7 @@ for i in range(len(scales)):
 
         args = args_sample_count + args_scale_density + args_scale_phase
         args_albedo_scale = " -Dr=" + str(r) + " -Dg=" + str(g) + " -Db=" + str(b)
-        args_light = " -Dlight=campus_sh_" + str(light) + ".exr"
+        args_light = " -Dlight=basis_sh_" + str(light) + ".exr"
         args += args_albedo_scale + args_light
         args += " -o "
         filename = "results/bunny"
