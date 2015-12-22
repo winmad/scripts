@@ -74,14 +74,14 @@ cmd = "mitsuba -s servers.txt"
 fovs = [15]
 scales = [2, 4] #[2, 4]
 sample_count = 64
-max_iter = 20
+max_iter = 25
 
 albedo_r = np.zeros((len(fovs), len(scales)))
 albedo_g = np.zeros((len(fovs), len(scales)))
 albedo_b = np.zeros((len(fovs), len(scales)))
 
 for i in range(len(scales)): 
-  r_l = 0.0; r_r = 1.0; g_l = 0.0; g_r = 1.0; b_l = 0.0; b_r = 1.0
+  r_l = 0.8; r_r = 1.0; g_l = 0.4; g_r = 0.7; b_l = 0.2; b_r = 0.5
   scale_phase = scales[i]
   scale_density = scales[i]
   args_sample_count = " -DsampleCount=" + str(sample_count)
@@ -97,26 +97,32 @@ for i in range(len(scales)):
     tot_avg_err = np.zeros((3))
 
     for view in range(6):
-      ref_filename = "results/ref/bunny_spp_1024_scale_1x_view_" + str(view) + ".pfm"
-      img0 = load_pfm(open(ref_filename, "rb"))
+      for light in range(4):
+        ref_filename = "results/ref/bunny_spp_1024_scale_1x_view_" + str(view) + "_sh_" + str(light) + ".pfm"
+        img0 = load_pfm(open(ref_filename, "rb"))
 
-      args = args_sample_count + args_scale_density + args_scale_phase
-      args_albedo_scale = " -Dr=" + str(r) + " -Dg=" + str(g) + " -Db=" + str(b)
-      args += args_albedo_scale
-      args += " -o "
-      filename = "results/bunny"
-      filename += "_spp_" + str(sample_count) + "_scale_" + str(scale_density) + "x_view_" + str(view) + ".pfm"
-      args += filename
-      args += " bunny_view_" + str(view) + "_env.xml"
-      print cmd + args
-      os.system(cmd + args)
+        args = args_sample_count + args_scale_density + args_scale_phase
+        args_albedo_scale = " -Dr=" + str(r) + " -Dg=" + str(g) + " -Db=" + str(b)
+        args_light = " -Dlight=campus_sh_" + str(light) + ".exr"
+        args += args_albedo_scale + args_light
+        args += " -o "
+        filename = "results/bunny"
+        filename += "_spp_" + str(sample_count) + "_scale_" + str(scale_density) + "x_view_" + str(view) + "_sh_" + str(light) + ".pfm"
+        args += filename
+        args += " bunny_view_" + str(view) + "_env.xml"
+        print cmd + args
+        os.system(cmd + args)
 		
-      img1 = load_pfm(open(filename, "rb"))
-      diff = np.subtract(img1, img0)
-      avg = np.mean(np.mean(diff, axis=0), axis=0)
-      tot_avg_err += avg
+        img1 = load_pfm(open(filename, "rb"))
+        diff = np.subtract(img1, img0)
+        avg = np.mean(np.mean(diff, axis=0), axis=0)
+        tot_avg_err += avg
     
+    print "=========================="
     print "finish iteration " + str(iter) + "... change albedo..."
+    st = "error: " + str(tot_avg_err[0]) + " " + str(tot_avg_err[1]) + " " + str(tot_avg_err[2])
+    print st
+    print "=========================="
     
     if (tot_avg_err[0] > 0):
       r_r = r
