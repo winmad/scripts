@@ -2,8 +2,6 @@ import sys
 import os
 import numpy as np
 import re
-import OpenEXR
-import Imath
 import array
 
 '''
@@ -107,5 +105,5 @@ for i in range(num_width):
 
 #outfile = open('D:\\scp\\cbox_1024_new.pfm', 'wb')
 #outfile = open('D:\\scp\\fov_1_spp_256_scale_4x_glossy.pfm', 'wb')
-outfile = open('LdA_combined.pfm', 'wb')
+outfile = open(sys.argv[1], 'wb')
 save_pfm(outfile, img)
