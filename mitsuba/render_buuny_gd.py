@@ -76,8 +76,8 @@ def calc_grad(LdA, L, L_ref):
     for i in range(LdA.shape[0]):
         for j in range(LdA.shape[1]):
             # only use volume part
-            #if (LdA[i][j][0] < 0.5):
-            #    continue
+            if (LdA[i][j][0] < 0.001):
+                continue
 
             cnt += 1.0
             for c in range(3):
@@ -91,15 +91,16 @@ def calc_grad(LdA, L, L_ref):
         res[c] = 2 * intensity[c] * grad[c]
     return res
 
-cmd = "D:\\Lifan\\mitsuba\\dist\\mitsuba"
+cmd = "mitsuba -s servers.txt"
 
-scales = [2]
-sample_count = 4
-max_iter = 2
+scales = [2, 4]
+sample_count = 512
+max_iter = 50
 max_views = 6
 lights = ['basis_sh_0.exr', 'basis_sh_1.exr', 'basis_sh_2.exr', 'basis_sh_3.exr']
 
-step_a = 0.1
+step_a = np.zeros((3))
+step_a[0] = 0.5; step_a[1] = 5; step_a[2] = 10
 rgb_init = np.zeros((3))
 rgb_init[0] = 0.95; rgb_init[1]= 0.64; rgb_init[2] = 0.37
 rgb = np.zeros((3))
@@ -137,8 +138,10 @@ for i in range(len(scales)):
                 L_ref_filename = "results/ref/bunny_spp_1024_scale_1x_view_" + str(j) + "_sh_" + str(k) + ".pfm"
                 L_ref = load_pfm(open(L_ref_filename, "rb"))
 
+                collect_cmd = "./collect_results.sh /mnt/bunny/ 19"
+                os.system(collect_cmd)
                 LdA_filename = "results/LdA_spp_" + str(sample_count) + "_scale_" + str(scales[i]) + "x_view_" + str(j) + "_sh_" + str(k) + ".pfm"
-                combine_cmd = "python ../combine_diff_results.py " + LdA_filename
+                combine_cmd = "python combine_diff_results.py " + LdA_filename
                 os.system(combine_cmd)
                 L = load_pfm(open(L_filename, "rb"))
                 LdA = load_pfm(open(LdA_filename, "rb"))
@@ -162,7 +165,7 @@ for i in range(len(scales)):
         outfile.write("======================\n")
         outfile.close()
 
-        rgb -= tot_grad * step
+        rgb -= np.multiply(tot_grad, step)
 
     outfile = open("results/bunny_albedo_values.txt", "a")
     st = "scale: " + str(scale_phase) + "\n"
