@@ -70,7 +70,8 @@ def save_pfm(file, image, scale = 1):
 
 #==============================================================
 def calc_grad(LdA, L, L_ref):
-    res = np.zeros((3))
+    intensity = np.zeros((3))
+    grad = np.zeros((3))
     cnt = 0.0
     for i in range(LdA.shape[0]):
         for j in range(LdA.shape[1]):
@@ -80,25 +81,30 @@ def calc_grad(LdA, L, L_ref):
 
             cnt += 1.0
             for c in range(3):
-                res[c] += 2.0 * (L[i][j][c] - L_ref[i][j][c]) * LdA[i][j][c]
-    res /= cnt
+                intensity[c] += (L[i][j][c] - L_ref[i][j][c])
+                grad[c] += LdA[i][j][c]
+
+    res = np.zeros((3))
+    for c in range(3):
+        intensity[c] /= cnt
+        grad[c] /= cnt
+        res[c] = 2 * intensity[c] * grad[c]
     return res
 
 cmd = "D:\\Lifan\\mitsuba\\dist\\mitsuba"
 
 scales = [2]
-sample_count = 64
-max_iter = 50
-lights = ['lights/campus.exr']
+sample_count = 4
+max_iter = 2
+max_views = 6
+lights = ['basis_sh_0.exr', 'basis_sh_1.exr', 'basis_sh_2.exr', 'basis_sh_3.exr']
 
-step = 0.02
+step_a = 0.1
 rgb_init = np.zeros((3))
 rgb_init[0] = 0.95; rgb_init[1]= 0.64; rgb_init[2] = 0.37
 rgb = np.zeros((3))
 rgb[0] = rgb_init[0]; rgb[1] = rgb_init[1]; rgb[2] = rgb_init[2]
 
-L_ref_filename = "bunny_spp_4096_scale_1x_a0.pfm"
-L_ref = load_pfm(open(L_ref_filename, "rb"))
 
 for i in range(len(scales)):
     scale_phase = scales[i]
@@ -109,50 +115,56 @@ for i in range(len(scales)):
     args_scale_density = " -Ddensity=density/density_" + str(scale_density) + "x.vol"
 
     for iter in range(max_iter):
-        if (iter > 40):
-            step = 0.005
-        elif (iter > 20):
-            step = 0.01
+        step = step_a / (iter + 1.0)
         tot_avg_err = np.zeros((3))
+        tot_grad = np.zeros((3))
+
+        for j in range(max_views):
+            for k in range(len(lights)):
+                args_albedo = " -Dr=" + str(rgb[0]) + " -Dg=" + str(rgb[1]) + " -Db=" + str(rgb[2])
+                args_light = " -Dlight=" + lights[k]
+                args = args_sample_count + args_scale_phase + args_scale_density
+                args += args_albedo + args_light
+                L_filename = "results/bunny_spp_" + str(sample_count) + "_scale_" + str(scales[i]) + "x_view_" + str(j) + "_sh_" + str(k) + ".pfm"
+                args += " -o " + L_filename
+                args += " -p 11"
+                args += " -b 40"
+                scene_filename = "bunny_diff_view_" + str(j) + ".xml"
+                args += " " + scene_filename
+                print cmd + args
+                os.system(cmd + args)
+
+                L_ref_filename = "results/ref/bunny_spp_1024_scale_1x_view_" + str(j) + "_sh_" + str(k) + ".pfm"
+                L_ref = load_pfm(open(L_ref_filename, "rb"))
+
+                LdA_filename = "results/LdA_spp_" + str(sample_count) + "_scale_" + str(scales[i]) + "x_view_" + str(j) + "_sh_" + str(k) + ".pfm"
+                combine_cmd = "python ../combine_diff_results.py " + LdA_filename
+                os.system(combine_cmd)
+                L = load_pfm(open(L_filename, "rb"))
+                LdA = load_pfm(open(LdA_filename, "rb"))
         
-        args_albedo = " -Dr=" + str(rgb[0]) + " -Dg=" + str(rgb[1]) + " -Db=" + str(rgb[2])
-        args_light = " -Dlight=" + lights[0]
-        args = args_sample_count + args_scale_phase + args_scale_density
-        args += args_albedo + args_light
-        L_filename = "gd_results/bunny_spp_" + str(sample_count) + "_scale_" + str(scales[i]) + "x.pfm"
-        args += " -o " + L_filename
-        args += " -p 11 -b 40"
-        scene_filename = "bunny_diff_env_light.xml"
-        args += " " + scene_filename
-        print cmd + args
-        os.system(cmd + args)
+                grad = calc_grad(LdA, L, L_ref)
+                tot_grad += grad
         
-        LdA_filename = "gd_results/LdA_spp_" + str(sample_count) + "_scale_" + str(scales[i]) + "x.pfm"
-        combine_cmd = "python ../combine_diff_results.py " + LdA_filename
-        os.system(combine_cmd)
-        L = load_pfm(open(L_filename, "rb"))
-        LdA = load_pfm(open(LdA_filename, "rb"))
+                diff = np.subtract(L, L_ref)
+                avg = np.mean(np.mean(diff, axis=0), axis=0)
+                tot_avg_err += avg
         
-        grad = calc_grad(LdA, L, L_ref)
-        rgb -= grad * step
-        
-        diff = np.subtract(L, L_ref)
-        avg = np.mean(np.mean(diff, axis=0), axis=0)
-        tot_avg_err = avg
-        
-        outfile = open("gd_results/bunny_albedo_grads.txt", "a")
+        outfile = open("results/bunny_albedo_grads.txt", "a")
         st = "finish iteration " + str(iter) + "... change albedo...\n"
         outfile.write(st)
         st = "r: " + str(rgb[0]) + " g: " + str(rgb[1]) + " b: " + str(rgb[2]) + "\n"
         outfile.write(st)
         st = "error: " + str(tot_avg_err[0]) + " " + str(tot_avg_err[1]) + " " + str(tot_avg_err[2]) + "\n"
         outfile.write(st)
-        st = "grad_r: " + str(grad[0]) + " grad_g: " + str(grad[1]) + " grad_b: " + str(grad[2]) + "\n"
+        st = "grad_r: " + str(tot_grad[0]) + " grad_g: " + str(tot_grad[1]) + " grad_b: " + str(tot_grad[2]) + "\n"
         outfile.write(st)
         outfile.write("======================\n")
         outfile.close()
 
-    outfile = open("gd_results/bunny_albedo_values.txt", "a")
+        rgb -= tot_grad * step
+
+    outfile = open("results/bunny_albedo_values.txt", "a")
     st = "scale: " + str(scale_phase) + "\n"
     outfile.write(st)
     st = "r: " + str(rgb[0]) + " g: " + str(rgb[1]) + " b: " + str(rgb[2]) + "\n"
