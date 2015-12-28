@@ -148,7 +148,7 @@ for i in range(len(scales)):
   outfile.write(st)
   st = "r: " + str(albedo_r[0][i]) + " g: " + str(albedo_g[0][i]) + " b: " + str(albedo_b[0][i]) + "\n"
   outfile.write(st)
-  st = "error: " + str(avg[0]) + " " + str(avg[1]) + " " + str(avg[2]) + "\n"
+  st = "error: " + str(tot_avg_err[0]) + " " + str(tot_avg_err[1]) + " " + str(tot_avg_err[2]) + "\n"
   outfile.write(st)
   outfile.write("=======================\n")
   outfile.close()
