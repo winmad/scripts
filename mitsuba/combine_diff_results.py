@@ -99,8 +99,8 @@ for i in range(num_width):
 				img[offset_y][offset_x][1] = pfmimg[y][x][1]
 				img[offset_y][offset_x][2] = pfmimg[y][x][2]
 
-		cmd = "del " + filename
-		#os.system(cmd)
+		cmd = "rm " + filename
+		os.system(cmd)
 			
 
 #outfile = open('D:\\scp\\cbox_1024_new.pfm', 'wb')

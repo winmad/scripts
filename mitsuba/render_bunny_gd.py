@@ -94,13 +94,13 @@ def calc_grad(LdA, L, L_ref):
 cmd = "mitsuba -s servers.txt"
 
 scales = [2, 4]
-sample_count = 512
+sample_count = 128
 max_iter = 50
 max_views = 6
 lights = ['basis_sh_0.exr', 'basis_sh_1.exr', 'basis_sh_2.exr', 'basis_sh_3.exr']
 
 step_a = np.zeros((3))
-step_a[0] = 0.5; step_a[1] = 5; step_a[2] = 10
+step_a[0] = 0.01; step_a[1] = 1; step_a[2] = 6
 rgb_init = np.zeros((3))
 rgb_init[0] = 0.95; rgb_init[1]= 0.64; rgb_init[2] = 0.37
 rgb = np.zeros((3))
@@ -128,7 +128,6 @@ for i in range(len(scales)):
                 args += args_albedo + args_light
                 L_filename = "results/bunny_spp_" + str(sample_count) + "_scale_" + str(scales[i]) + "x_view_" + str(j) + "_sh_" + str(k) + ".pfm"
                 args += " -o " + L_filename
-                args += " -p 11"
                 args += " -b 40"
                 scene_filename = "bunny_diff_view_" + str(j) + ".xml"
                 args += " " + scene_filename
