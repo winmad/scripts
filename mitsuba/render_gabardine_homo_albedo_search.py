@@ -71,7 +71,7 @@ def save_pfm(file, image, scale = 1):
 #=====================================================
 cmd = "mitsuba -s servers.txt"
 
-fovs = [15]
+fovs = [4, 1]
 scales = [2, 4] #[2, 4]
 sample_count = 128
 ref_sample_count = 2048
@@ -82,77 +82,80 @@ albedo_g = np.zeros((len(fovs), len(scales)))
 albedo_b = np.zeros((len(fovs), len(scales)))
 
 for i in range(len(scales)): 
-  r_l = 0.8; r_r = 1.0; g_l = 0; g_r = 0.2; b_l = 0; b_r = 0.2
-  scale_phase = scales[i]
-  scale_density = scales[i]
-  args_sample_count = " -DsampleCount=" + str(sample_count)
-  args_scale_phase = " -Ds1vol=phase/s1_" + str(scale_phase) + "x.vol"
-  args_scale_phase += " -Ds2vol=phase/s2_" + str(scale_phase) + "x.vol"
-  args_scale_density = " -Ddensity=density/density_" + str(scale_density) + "x.vol"
+    scale_phase = scales[i]
+    scale_density = scales[i]
+    args_sample_count = " -DsampleCount=" + str(sample_count)
+    args_scale_phase = " -Ds1vol=phase/s1_" + str(scale_phase) + "x.vol"
+    args_scale_phase += " -Ds2vol=phase/s2_" + str(scale_phase) + "x.vol"
+    args_scale_density = " -Ddensity=density/density_" + str(scale_density) + "x.vol"
   
-  for iter in range(max_iter):
-    r = (r_l + r_r) * 0.5
-    g = (g_l + g_r) * 0.5
-    b = (b_l + b_r) * 0.5
+    for fov in fovs:
+        args_fov = " -Dfov=" + str(fov)
+        r_l = 0.8; r_r = 1.0; g_l = 0; g_r = 0.2; b_l = 0; b_r = 0.2
     
-    tot_avg_err = np.zeros((3))
+        for iter in range(max_iter):
+            r = (r_l + r_r) * 0.5
+            g = (g_l + g_r) * 0.5
+            b = (b_l + b_r) * 0.5
+    
+            tot_avg_err = np.zeros((3))
 
-    for view in range(2):
-      for light in range(4):
-        ref_filename = "results/ref/homo_spp_" + str(ref_sample_count) + "_scale_1x_view_" + str(view) + "_sh_" + str(light) + ".pfm"
-        img0 = load_pfm(open(ref_filename, "rb"))
+            for view in range(2):
+                for light in range(4):
+                    ref_filename = "results/ref/homo_fov_" + "_spp_" + str(ref_sample_count) + "_scale_1x_view_" + str(view) + "_sh_" + str(light) + ".pfm"
+                    img0 = load_pfm(open(ref_filename, "rb"))
 
-        args = args_sample_count + args_scale_density + args_scale_phase
-        args_albedo_scale = " -Dr=" + str(r) + " -Dg=" + str(g) + " -Db=" + str(b)
-        args_light = " -Dlight=basis_sh_" + str(light) + ".exr"
-        args += args_albedo_scale + args_light
-        args += " -o "
-        filename = "results/homo"
-        filename += "_spp_" + str(sample_count) + "_scale_" + str(scale_density) + "x_view_" + str(view) + "_sh_" + str(light) + ".pfm"
-        args += filename
-        args += " homo_sggx_view_" + str(view) + ".xml"
-        print cmd + args
-        os.system(cmd + args)
+                    args = args_sample_count + args_scale_density + args_scale_phase
+                    args_albedo_scale = " -Dr=" + str(r) + " -Dg=" + str(g) + " -Db=" + str(b)
+                    args_light = " -Dlight=basis_sh_" + str(light) + ".exr"
+                    args += args_albedo_scale + args_light + args_fov
+                    args += " -o "
+                    filename = "results/homo"
+                    filename += "_spp_" + str(sample_count) + "_scale_" + str(scale_density) + "x_view_" + str(view) + "_sh_" + str(light) + ".pfm"
+                    args += filename
+                    args += " homo_sggx_view_" + str(view) + ".xml"
+                    print cmd + args
+                    os.system(cmd + args)
         
-        img1 = load_pfm(open(filename, "rb"))
-        diff = np.subtract(img1, img0)
-        avg = np.mean(np.mean(diff, axis=0), axis=0)
-        tot_avg_err += avg
+                    img1 = load_pfm(open(filename, "rb"))
+                    diff = np.subtract(img1, img0)
+                    avg = np.mean(np.mean(diff, axis=0), axis=0)
+                    tot_avg_err += avg
     
-    outfile = open("results/homo_binary_search.txt", "a")
-    st = "finish iteration " + str(iter) + "... change albedo...\n"
-    outfile.write(st)
-    st = "error: " + str(tot_avg_err[0]) + " " + str(tot_avg_err[1]) + " " + str(tot_avg_err[2]) + "\n"
-    outfile.write(st)
-    outfile.write("==========================\n")
-    outfile.close()
+            outfile = open("results/homo_binary_search.txt", "a")
+            st = "finish iteration " + str(iter) + "... change albedo...\n"
+            outfile.write(st)
+            st = "error: " + str(tot_avg_err[0]) + " " + str(tot_avg_err[1]) + " " + str(tot_avg_err[2]) + "\n"
+            outfile.write(st)
+            outfile.write("==========================\n")
+            outfile.close()
     
-    if (tot_avg_err[0] > 0):
-      r_r = r
-    else:
-      r_l = r
+            if (tot_avg_err[0] > 0):
+                r_r = r
+            else:
+                r_l = r
     
-    if (tot_avg_err[1] > 0):
-      g_r = g
-    else:
-      g_l = g
+            if (tot_avg_err[1] > 0):
+                g_r = g
+            else:
+                g_l = g
 
-    if (tot_avg_err[2] > 0):
-      b_r = b
-    else:
-      b_l = b
+            if (tot_avg_err[2] > 0):
+                b_r = b
+            else:
+                b_l = b
 
-  albedo_r[0][i] = (r_l + r_r) * 0.5
-  albedo_g[0][i] = (g_l + g_r) * 0.5
-  albedo_b[0][i] = (b_l + b_r) * 0.5
+        albedo_r[0][i] = (r_l + r_r) * 0.5
+        albedo_g[0][i] = (g_l + g_r) * 0.5
+        albedo_b[0][i] = (b_l + b_r) * 0.5
         
-  outfile = open("results/homo_albedo_values.txt", "a")
-  st = "scale: " + str(scale_phase) + "\n"
-  outfile.write(st)
-  st = "r: " + str(albedo_r[0][i]) + " g: " + str(albedo_g[0][i]) + " b: " + str(albedo_b[0][i]) + "\n"
-  outfile.write(st)
-  st = "error: " + str(tot_avg_err[0]) + " " + str(tot_avg_err[1]) + " " + str(tot_avg_err[2]) + "\n"
-  outfile.write(st)
-  outfile.write("=======================\n")
-  outfile.close()
+        outfile = open("results/homo_albedo_values.txt", "a")
+        st = "fov: " + str(fov) + ", scale: " + str(scale_phase) + "\n"
+        outfile.write(st)
+        st = "r: " + str(albedo_r[0][i]) + " g: " + str(albedo_g[0][i]) + " b: " + str(albedo_b[0][i]) + "\n"
+        outfile.write(st)
+        st = "error: " + str(tot_avg_err[0]) + " " + str(tot_avg_err[1]) + " " + str(tot_avg_err[2]) + "\n"
+        outfile.write(st)
+        outfile.write("=======================\n")
+        outfile.close()
 
