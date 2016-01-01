@@ -4,7 +4,7 @@ import sys, os
 cmd = "mitsuba -s servers.txt"
 
 scales = [1]
-sample_count = 2048
+sample_count = 1024
 fovs = [4, 1]
 lights = ["basis_sh_0.exr", "basis_sh_1.exr", "basis_sh_2.exr", "basis_sh_3.exr"]
 max_views = 2

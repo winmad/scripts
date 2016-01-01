@@ -71,10 +71,10 @@ def save_pfm(file, image, scale = 1):
 #=====================================================
 cmd = "mitsuba -s servers.txt"
 
-fovs = [4, 1]
-scales = [2, 4] #[2, 4]
-sample_count = 128
-ref_sample_count = 2048
+fovs = [1, 4]
+scales = [4, 2] #[2, 4]
+sample_count = 32
+ref_sample_count = 1024
 max_iter = 25
 
 albedo_r = np.zeros((len(fovs), len(scales)))
@@ -102,7 +102,7 @@ for i in range(len(scales)):
 
             for view in range(2):
                 for light in range(4):
-                    ref_filename = "results/ref/homo_fov_" + "_spp_" + str(ref_sample_count) + "_scale_1x_view_" + str(view) + "_sh_" + str(light) + ".pfm"
+                    ref_filename = "results/ref/homo_fov_" + str(fov) + "_spp_" + str(ref_sample_count) + "_scale_1x_view_" + str(view) + "_sh_" + str(light) + ".pfm"
                     img0 = load_pfm(open(ref_filename, "rb"))
 
                     args = args_sample_count + args_scale_density + args_scale_phase
@@ -125,6 +125,8 @@ for i in range(len(scales)):
             outfile = open("results/homo_binary_search.txt", "a")
             st = "finish iteration " + str(iter) + "... change albedo...\n"
             outfile.write(st)
+            st = "r: " + str(r) + " g: " + str(g) + " b: " + str(b) + "\n"
+            outfile.write(st)
             st = "error: " + str(tot_avg_err[0]) + " " + str(tot_avg_err[1]) + " " + str(tot_avg_err[2]) + "\n"
             outfile.write(st)
             outfile.write("==========================\n")
@@ -144,6 +146,7 @@ for i in range(len(scales)):
                 b_r = b
             else:
                 b_l = b
+
 
         albedo_r[0][i] = (r_l + r_r) * 0.5
         albedo_g[0][i] = (g_l + g_r) * 0.5
