@@ -15,7 +15,6 @@ sleep 5
 
 ./run_mtssrv.sh $3 $4
 
-cd /home/ubuntu/mitsuba
-. setpath.sh
+. /home/ubuntu/mitsuba/setpath.sh
 
 cd $3
